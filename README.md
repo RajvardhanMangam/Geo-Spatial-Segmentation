@@ -45,7 +45,7 @@ AI-powered detection of buildings, roads, and utilities from high-resolution dro
 
 ### 1. Clone and run
 ```bash
-git clone <repo>
+git clone https://github.com/RajvardhanMangam/Geo-Spatial-Segmentation.git
 cd Geo-Spatial-Segmentation
 docker compose up --build
 ```
