@@ -1,0 +1,25 @@
+{
+  "name": "mopr-detector-frontend",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-scripts": "5.0.1",
+    "leaflet": "^1.9.4",
+    "react-leaflet": "^4.2.1",
+    "proj4": "^2.11.0",
+    "proj4leaflet": "^1.0.2",
+    "axios": "^1.7.2",
+    "zustand": "^4.5.4",
+    "@turf/turf": "^6.5.0"
+  },
+  "scripts": {
+    "start": "react-scripts start",
+    "build": "react-scripts build"
+  },
+  "browserslist": {
+    "production": [">0.2%", "not dead"],
+    "development": ["last 1 chrome version"]
+  }
+}
