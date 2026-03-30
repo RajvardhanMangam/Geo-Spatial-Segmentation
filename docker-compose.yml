@@ -1,21 +1,59 @@
 version: '3.8'
 
 services:
-  backend:
-    image: backend-image
-    # Other configurations
+  redis:
+    image: redis:7-alpine
     ports:
-      - 8000:8000
+      - "6379:6379"
     networks:
-      - backend-network
+      - app-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - UPLOAD_DIR=/tmp/mopr_uploads
+      - OUTPUT_DIR=/tmp/mopr_outputs
+      - MODEL_NAME=facebook/mask2former-swin-large-ade-semantic
+      - MODEL_DEVICE=cpu
+      - CHUNK_SIZE=1024
+      - CHUNK_OVERLAP=64
+    depends_on:
+      redis:
+        condition: service_healthy
+    networks:
+      - app-network
+    volumes:
+      - uploads:/tmp/mopr_uploads
+      - outputs:/tmp/mopr_outputs
 
   frontend:
-    image: frontend-image
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
     ports:
-      - 3000:3000
+      - "3000:3000"
+    environment:
+      - REACT_APP_API_URL=http://localhost:8000
+      - REACT_APP_WS_URL=ws://localhost:8000
+    depends_on:
+      - backend
     networks:
-      - frontend-network
+      - app-network
 
 networks:
-  backend-network:
-  frontend-network:
+  app-network:
+    driver: bridge
+
+volumes:
+  uploads:
+  outputs:
