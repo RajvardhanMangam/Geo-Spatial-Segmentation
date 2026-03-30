@@ -1,52 +1,21 @@
-version: "3.9"
+version: '3.8'
 
 services:
-  redis:
-    image: redis:7-alpine
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis_data:/data
-    command: redis-server --appendonly yes
-
   backend:
-    build:
-      context: ./backend
-      dockerfile: Dockerfile
+    image: backend-image
+    # Other configurations
     ports:
-      - "8000:8000"
-    environment:
-      - REDIS_URL=redis://redis:6379/0
-      - UPLOAD_DIR=/data/uploads
-      - OUTPUT_DIR=/data/outputs
-      - MODEL_DEVICE=cuda          # change to "cuda" if GPU available
-      - USE_GPU=0
-    volumes:
-      - tif_data:/data
-      - model_cache:/tmp/model_cache
-    depends_on:
-      - redis
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: all
-              capabilities: [gpu]
+      - 8000:8000
+    networks:
+      - backend-network
 
   frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
+    image: frontend-image
     ports:
-      - "3000:3000"
-    environment:
-      - REACT_APP_API_URL=http://localhost:8000
-      - REACT_APP_WS_URL=ws://localhost:8000
-    depends_on:
-      - backend
+      - 3000:3000
+    networks:
+      - frontend-network
 
-volumes:
-  redis_data:
-  tif_data:
-  model_cache:
+networks:
+  backend-network:
+  frontend-network:
