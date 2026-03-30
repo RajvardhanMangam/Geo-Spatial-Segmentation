@@ -19,7 +19,7 @@ services:
       - REDIS_URL=redis://redis:6379/0
       - UPLOAD_DIR=/data/uploads
       - OUTPUT_DIR=/data/outputs
-      - MODEL_DEVICE=cpu          # change to "cuda" if GPU available
+      - MODEL_DEVICE=cuda          # change to "cuda" if GPU available
       - USE_GPU=0
     volumes:
       - tif_data:/data
