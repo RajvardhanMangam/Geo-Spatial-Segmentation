@@ -1,4 +1,4 @@
-# MoPR Rural Feature Detector
+# Geo Spatial Segmentation
 **Hackathon: MoPR Problem Statement 1**  
 AI-powered detection of buildings, roads, and utilities from high-resolution drone orthophotos.
 
@@ -46,7 +46,7 @@ AI-powered detection of buildings, roads, and utilities from high-resolution dro
 ### 1. Clone and run
 ```bash
 git clone <repo>
-cd mopr-detector
+cd Geo-Spatial-Segmentation
 docker compose up --build
 ```
 
