@@ -55,7 +55,7 @@ export default function App() {
           <UploadPanel />
           <ProgressPanel />
           <div className="sidebar-footer">
-            <span>Mask2Former · 4-band · 1024px chunks</span>
+            <span>SegFormer ONNX · RGB · 1024px chunks</span>
           </div>
         </aside>
 

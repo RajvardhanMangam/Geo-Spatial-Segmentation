@@ -3,7 +3,7 @@ Async inference pipeline.
 
 Starts a job that:
 1. Iterates GeoTIFF chunks (rasterio windowed read)
-2. Runs Mask2Former on each chunk
+2. Runs SegFormer ONNX on each chunk
 3. Publishes results to Redis pub/sub channel (consumed by WebSocket handler)
 4. Updates job progress in Redis
 
@@ -23,6 +23,7 @@ from pydantic import BaseModel
 from app.core.config import settings
 from app.core.redis_client import redis_client
 from app.services.chunker import iter_chunks
+from app.services.detection_postprocess import merge_same_label_detections
 from app.services.model_service import detection_model
 
 router = APIRouter()
@@ -133,18 +134,29 @@ async def _run_inference(job_id: str):
 
         # Done
         all_detections = await redis_client.get_all_detections(job_id)
+        merged_detections = await loop.run_in_executor(
+            _executor, merge_same_label_detections, all_detections
+        )
+        await redis_client.replace_detections(job_id, merged_detections)
+
         await redis_client.update_job(job_id, {
             "status": "completed",
             "progress": 100,
-            "detections_found": len(all_detections),
+            "detections_found": len(merged_detections),
             "updated_at": time.time(),
         })
         await redis_client.publish(f"job:{job_id}", {
             "type": "completed",
             "job_id": job_id,
-            "total_detections": len(all_detections),
+            "total_detections": len(merged_detections),
+            "detections": merged_detections,
         })
-        logger.info("Job %s completed: %d detections", job_id, len(all_detections))
+        logger.info(
+            "Job %s completed: %d raw detections, %d merged detections",
+            job_id,
+            len(all_detections),
+            len(merged_detections),
+        )
 
     except Exception as e:
         logger.exception("Job %s failed: %s", job_id, e)

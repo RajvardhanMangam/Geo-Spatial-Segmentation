@@ -23,8 +23,6 @@ import { polygonToLatLngs, metadataToBounds } from '../utils/projection';
 const FEATURE_COLORS = {
   building:   '#FF4444',
   road:       '#4488FF',
-  utility:    '#FFAA00',
-  vegetation: '#44BB44',
   water:      '#00BBFF',
 };
 
@@ -62,6 +60,7 @@ export default function DetectionMap() {
     <MapContainer
       center={center}
       zoom={bounds ? 14 : 5}
+      maxZoom={24}
       style={{ width: '100%', height: '100%' }}
       zoomControl={true}
     >
@@ -69,7 +68,8 @@ export default function DetectionMap() {
       <TileLayer
         url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
         attribution="Esri, Maxar, Earthstar Geographics"
-        maxZoom={22}
+        maxNativeZoom={18}
+        maxZoom={24}
       />
 
       {/* OSM labels overlay */}
@@ -77,6 +77,8 @@ export default function DetectionMap() {
         url="https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}{r}.png"
         attribution="© OpenStreetMap, © CartoDB"
         opacity={0.7}
+        maxNativeZoom={20}
+        maxZoom={24}
       />
 
       {/* Image bounds rectangle */}

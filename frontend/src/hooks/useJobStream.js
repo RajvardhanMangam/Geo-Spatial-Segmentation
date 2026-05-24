@@ -12,6 +12,7 @@ export function useJobStream(jobId) {
     setJobStatus,
     setProgress,
     addDetections,
+    setDetections,
     setCompleted,
     setError,
   } = useStore();
@@ -50,7 +51,7 @@ export function useJobStream(jobId) {
         case 'completed':
           setProgress(100);
           setJobStatus('completed');
-          if (msg.detections) addDetections(msg.detections);
+          if (msg.detections) setDetections(msg.detections);
           setCompleted(msg.total_detections);
           break;
 

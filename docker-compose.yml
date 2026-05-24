@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   redis:
     image: redis:7-alpine
@@ -15,18 +13,23 @@ services:
 
   backend:
     build:
-      context: ./backend
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: backend/Dockerfile
     ports:
       - "8000:8000"
     environment:
       - REDIS_URL=redis://redis:6379/0
       - UPLOAD_DIR=/tmp/mopr_uploads
       - OUTPUT_DIR=/tmp/mopr_outputs
-      - MODEL_NAME=facebook/mask2former-swin-large-ade-semantic
+      - MODEL_NAME=segformer_epoch_35.onnx
+      - ONNX_MODEL_PATH=/app/models/segformer_epoch_35.onnx
       - MODEL_DEVICE=cpu
+      - MODEL_INPUT_SIZE=512
       - CHUNK_SIZE=1024
       - CHUNK_OVERLAP=64
+      - TIFF_PREPROCESS_MODE=percentile
+      - TIFF_PERCENTILE_LOW=2
+      - TIFF_PERCENTILE_HIGH=98
     depends_on:
       redis:
         condition: service_healthy

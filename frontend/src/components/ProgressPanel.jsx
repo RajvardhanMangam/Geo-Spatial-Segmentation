@@ -9,8 +9,6 @@ import { getGeoJsonUrl } from '../services/api';
 const FEATURE_COLORS = {
   building:   '#FF4444',
   road:       '#4488FF',
-  utility:    '#FFAA00',
-  vegetation: '#44BB44',
   water:      '#00BBFF',
 };
 

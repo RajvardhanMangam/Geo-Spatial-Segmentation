@@ -59,7 +59,7 @@ def iter_chunks(tif_path: str) -> Generator[ImageChunk, None, None]:
     Handles:
     - Edge tiles smaller than 1024
     - Overlap padding to reduce edge artifacts
-    - Band normalization to float32 [0, 1]
+    - RGB preprocessing to float32 [0, 1]
     """
     chunk_size = settings.CHUNK_SIZE
     overlap = settings.CHUNK_OVERLAP
@@ -97,30 +97,9 @@ def iter_chunks(tif_path: str) -> Generator[ImageChunk, None, None]:
                 window = Window(read_col, read_row, read_w, read_h)
 
                 try:
-                    # Read all bands
+                    # Read all bands, then keep the RGB channels expected by SegFormer.
                     data = src.read(window=window)  # (C, H, W)
-
-                    # Use only first 4 bands (RGB + NIR) or pad if fewer
-                    num_bands = src.count
-                    if num_bands >= 4:
-                        data = data[:4]
-                    else:
-                        # Pad with zeros to reach 4 bands
-                        pad = np.zeros(
-                            (4 - num_bands, data.shape[1], data.shape[2]),
-                            dtype=data.dtype
-                        )
-                        data = np.concatenate([data, pad], axis=0)
-
-                    # Normalize to float32 [0, 1]
-                    data = data.astype(np.float32)
-                    for band_idx in range(data.shape[0]):
-                        band = data[band_idx]
-                        band_min, band_max = band.min(), band.max()
-                        if band_max > band_min:
-                            data[band_idx] = (band - band_min) / (band_max - band_min)
-                        else:
-                            data[band_idx] = np.zeros_like(band)
+                    data = preprocess_tiff_window(data, src)
 
                     geo_transform = chunk_window_transform(transform, window)
 
@@ -140,3 +119,85 @@ def iter_chunks(tif_path: str) -> Generator[ImageChunk, None, None]:
                 except Exception as e:
                     logger.error("Error reading chunk %d_%d: %s", row_idx, col_idx, e)
                     continue
+
+
+def preprocess_tiff_window(data: np.ndarray, src) -> np.ndarray:
+    """
+    Convert a rasterio window read into model-ready RGB float32 data.
+
+    The default percentile mode gives drone orthophotos a stable contrast stretch
+    without letting a few very bright or dark pixels dominate the tile.
+    """
+    if data.shape[0] >= 3:
+        data = data[:3]
+    else:
+        pad = np.zeros(
+            (3 - data.shape[0], data.shape[1], data.shape[2]),
+            dtype=data.dtype,
+        )
+        data = np.concatenate([data, pad], axis=0)
+
+    dtypes = list(getattr(src, "dtypes", []))
+    nodatavals = list(getattr(src, "nodatavals", []) or [])
+    mode = settings.TIFF_PREPROCESS_MODE.lower()
+
+    output = np.zeros(data.shape, dtype=np.float32)
+    for band_idx in range(data.shape[0]):
+        dtype = dtypes[band_idx] if band_idx < len(dtypes) else data.dtype
+        nodata = nodatavals[band_idx] if band_idx < len(nodatavals) else None
+        output[band_idx] = _normalise_band(data[band_idx], dtype, nodata, mode)
+
+    return np.clip(output, 0.0, 1.0)
+
+
+def _normalise_band(
+    band: np.ndarray,
+    dtype,
+    nodata,
+    mode: str,
+) -> np.ndarray:
+    band = band.astype(np.float32, copy=False)
+    valid = np.isfinite(band)
+    if nodata is not None:
+        valid &= band != float(nodata)
+
+    if not np.any(valid):
+        return np.zeros_like(band, dtype=np.float32)
+
+    if mode == "dtype":
+        return _scale_band_by_dtype(band, valid, dtype)
+
+    values = band[valid]
+    if mode == "minmax":
+        low = float(values.min())
+        high = float(values.max())
+    else:
+        low = float(np.percentile(values, settings.TIFF_PERCENTILE_LOW))
+        high = float(np.percentile(values, settings.TIFF_PERCENTILE_HIGH))
+
+    if high <= low:
+        return _scale_band_by_dtype(band, valid, dtype)
+
+    normalised = (band - low) / (high - low)
+    normalised[~valid] = 0.0
+    return normalised.astype(np.float32, copy=False)
+
+
+def _scale_band_by_dtype(band: np.ndarray, valid: np.ndarray, dtype) -> np.ndarray:
+    values = band[valid]
+    valid_max = float(values.max()) if values.size else 0.0
+    np_dtype = np.dtype(dtype)
+
+    if np.issubdtype(np_dtype, np.integer):
+        if valid_max <= 1.0:
+            scale = 1.0
+        elif valid_max <= 255.0:
+            scale = 255.0
+        else:
+            scale = float(np.iinfo(np_dtype).max)
+    else:
+        scale = 255.0 if valid_max > 1.0 else 1.0
+
+    normalised = band / max(scale, 1.0)
+    normalised[~valid] = 0.0
+    return normalised.astype(np.float32, copy=False)

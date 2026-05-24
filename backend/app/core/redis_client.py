@@ -58,6 +58,15 @@ class RedisClient:
     async def append_detection(self, job_id: str, feature: dict):
         await self.client.rpush(f"detections:{job_id}", json.dumps(feature))
 
+    async def replace_detections(self, job_id: str, features: list[dict], ttl: int = 86400):
+        key = f"detections:{job_id}"
+        async with self.client.pipeline(transaction=True) as pipe:
+            pipe.delete(key)
+            if features:
+                pipe.rpush(key, *[json.dumps(feature) for feature in features])
+            pipe.expire(key, ttl)
+            await pipe.execute()
+
     async def get_all_detections(self, job_id: str) -> list:
         raw_list = await self.client.lrange(f"detections:{job_id}", 0, -1)
         return [json.loads(r) for r in raw_list]

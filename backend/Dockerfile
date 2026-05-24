@@ -1,29 +1,18 @@
 FROM python:3.11-slim
 
-# Install GDAL and other system dependencies required by rasterio, shapely, etc.
+# Runtime shared library used by OpenCV / numerical wheels.
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    gdal-bin \
-    libgdal-dev \
-    libgeos-dev \
-    libproj-dev \
-    g++ \
-    gcc \
-    git \
-    curl \
+    libgomp1 \
     && rm -rf /var/lib/apt/lists/*
-
-# Set GDAL env vars so rasterio can find the libs
-ENV GDAL_CONFIG=/usr/bin/gdal-config
-ENV CPLUS_INCLUDE_PATH=/usr/include/gdal
-ENV C_INCLUDE_PATH=/usr/include/gdal
 
 WORKDIR /app
 
-COPY requirements.txt .
+COPY backend/requirements.txt .
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
 
-COPY . .
+COPY backend/ .
+COPY models/segformer_epoch_35.onnx models/segformer_epoch_35.onnx
 
 EXPOSE 8000
 

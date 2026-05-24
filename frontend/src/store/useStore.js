@@ -24,8 +24,6 @@ export const useStore = create((set, get) => ({
   activeFilters: {
     building: true,
     road: true,
-    utility: true,
-    vegetation: true,
     water: true,
   },
 
@@ -46,6 +44,8 @@ export const useStore = create((set, get) => ({
 
   addDetections: (newDets) =>
     set((state) => ({ detections: [...state.detections, ...newDets] })),
+
+  setDetections: (detections) => set({ detections }),
 
   clearDetections: () => set({ detections: [] }),
 

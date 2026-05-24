@@ -16,19 +16,26 @@ class Settings(BaseSettings):
     CHUNK_OVERLAP: int = 64         # pixel overlap to avoid edge artifacts
     BATCH_SIZE: int = 4             # chunks per GPU batch
 
+    # GeoTIFF preprocessing
+    # Modes: percentile, minmax, dtype
+    TIFF_PREPROCESS_MODE: str = "percentile"
+    TIFF_PERCENTILE_LOW: float = 2.0
+    TIFF_PERCENTILE_HIGH: float = 98.0
+
     # Model
-    MODEL_NAME: str = "facebook/mask2former-swin-large-ade-semantic"
+    MODEL_NAME: str = "segformer_epoch_35.onnx"
+    ONNX_MODEL_PATH: str = "models/segformer_epoch_35.onnx"
+    MODEL_INPUT_SIZE: int = 512
     MODEL_DEVICE: str = "cuda" if os.environ.get("USE_GPU") else "cpu"
     MODEL_CACHE_DIR: str = "/tmp/model_cache"
+    MIN_SEGMENT_AREA_PX: int = 100
 
     # Detection classes mapped to rural features
-    # Adjust these indices based on your fine-tuned model's label map
+    # Fine-tuned SegFormer labels: 0=background, 1=building, 2=road, 3=water
     FEATURE_CLASS_MAP: dict = {
-        "building": [1, 2, 3],       # ADE20K: building, house, shelter
-        "road": [6, 9, 52],          # ADE20K: road, path, sidewalk
-        "utility": [83, 93, 130],    # ADE20K: pole, tower, wire
-        "vegetation": [4, 17],       # ADE20K: tree, grass
-        "water": [21, 26, 60],       # ADE20K: water, river, pond
+        "building": [1],
+        "road": [2],
+        "water": [3],
     }
 
     # Redis
@@ -39,6 +46,7 @@ class Settings(BaseSettings):
 
     class Config:
         env_file = ".env"
+        extra = "ignore"
 
 
 settings = Settings()
