@@ -69,6 +69,14 @@ export async function getJob(jobId) {
 }
 
 /**
+ * Get all detections for a job.
+ */
+export async function getDetections(jobId) {
+  const { data } = await http.get(`/api/v1/jobs/${jobId}/detections`);
+  return data;
+}
+
+/**
  * Download GeoJSON for a completed job.
  */
 export function getGeoJsonUrl(jobId) {

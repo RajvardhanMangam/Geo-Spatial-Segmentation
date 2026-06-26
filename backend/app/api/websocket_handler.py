@@ -36,17 +36,29 @@ async def job_stream(websocket: WebSocket, job_id: str):
         await websocket.close()
         return
 
-    # If job already done, send all detections and close
+    # If job already done, send completion metadata; frontend fetches detections.
     if job.get("status") in ("completed", "failed"):
         detections = await redis_client.get_all_detections(job_id)
         await websocket.send_json({
             "type": "completed",
             "job_id": job_id,
             "total_detections": len(detections),
-            "detections": detections,  # send all at once for reconnect
         })
         await websocket.close()
         return
+
+    # On reconnect during a running job, send the detections accumulated so far.
+    # Redis pub/sub only delivers future messages, so without this snapshot the
+    # UI can show fresh progress while polygons remain stuck at the last chunk
+    # it saw before the socket dropped.
+    existing_detections = await redis_client.get_all_detections(job_id)
+    if existing_detections:
+        await websocket.send_json({
+            "type": "detections_snapshot",
+            "job_id": job_id,
+            "count": len(existing_detections),
+            "detections": existing_detections,
+        })
 
     # Subscribe to Redis pub/sub for live updates
     pubsub = await redis_client.subscribe(f"job:{job_id}")

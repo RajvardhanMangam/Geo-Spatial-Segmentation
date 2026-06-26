@@ -1,0 +1,20 @@
+{
+  "classes": [
+    "road_type_3",
+    "road_type_5",
+    "road_type_6"
+  ],
+  "model_name": "convnext_tiny",
+  "image_size": 224,
+  "input": "float32 NCHW RGB, normalized with ImageNet mean/std",
+  "mean": [
+    0.485,
+    0.456,
+    0.406
+  ],
+  "std": [
+    0.229,
+    0.224,
+    0.225
+  ]
+}

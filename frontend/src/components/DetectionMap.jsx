@@ -23,8 +23,20 @@ import { polygonToLatLngs, metadataToBounds } from '../utils/projection';
 const FEATURE_COLORS = {
   building:   '#FF4444',
   road:       '#4488FF',
+  road_added: '#FFD23F',
   water:      '#00BBFF',
 };
+
+function getSubtype(det) {
+  if (det.subtype) return det.subtype;
+  if (det.feature_type && det.feature_type !== det.base_feature_type) {
+    return det.feature_type;
+  }
+  if (det.display_label?.includes(' - ')) {
+    return det.display_label.split(' - ').slice(1).join(' - ');
+  }
+  return det.feature_type;
+}
 
 // Fit map to image bounds when metadata arrives
 function BoundsFitter({ bounds }) {
@@ -47,9 +59,15 @@ export default function DetectionMap() {
 
   // Convert detections to Leaflet polygons, filtered by type and visibility
   const visibleDetections = useMemo(() => {
-    return detections.filter(
-      (d) => activeFilters[d.feature_type] !== false && d.geo_polygon?.length >= 4
-    );
+    return detections
+      .filter(
+        (d) => activeFilters[d.display_label || d.feature_type] !== false && d.geo_polygon?.length >= 4
+      )
+      .sort((a, b) => {
+        if (a.source_feature_type === 'road_added' && b.source_feature_type !== 'road_added') return 1;
+        if (a.source_feature_type !== 'road_added' && b.source_feature_type === 'road_added') return -1;
+        return 0;
+      });
   }, [detections, activeFilters]);
 
   const center = bounds
@@ -102,7 +120,9 @@ export default function DetectionMap() {
       {visibleDetections.map((det, idx) => {
         const crs = det.crs || 'EPSG:4326';
         const latLngs = polygonToLatLngs(det.geo_polygon, crs);
-        const color = FEATURE_COLORS[det.feature_type] || '#FFFFFF';
+        const color = det.colour || FEATURE_COLORS[det.base_feature_type] || FEATURE_COLORS[det.feature_type] || '#FFFFFF';
+        const isAddedRoad = det.source_feature_type === 'road_added';
+        const subtype = getSubtype(det);
 
         return (
           <Polygon
@@ -110,17 +130,21 @@ export default function DetectionMap() {
             positions={latLngs}
             pathOptions={{
               color,
-              weight: 1.5,
-              opacity: 0.9,
+              weight: isAddedRoad ? 3 : 1.5,
+              opacity: isAddedRoad ? 1 : 0.9,
               fillColor: color,
-              fillOpacity: 0.25,
+              fillOpacity: isAddedRoad ? 0.45 : 0.25,
             }}
           >
             <Popup>
               <div style={{ fontFamily: 'monospace', fontSize: 13 }}>
                 <strong style={{ color, textTransform: 'uppercase' }}>
-                  {det.feature_type}
+                  {det.display_label || det.feature_type}
                 </strong>
+                <br />
+                Class: {det.base_feature_type || det.feature_type}
+                <br />
+                Type: {subtype}
                 <br />
                 Confidence: {(det.confidence * 100).toFixed(1)}%
                 <br />

@@ -11,6 +11,7 @@ from fastapi.staticfiles import StaticFiles
 from app.api import inference, jobs, upload, websocket_handler
 from app.core.config import settings
 from app.core.redis_client import redis_client
+from app.services.model_service import classifier_status
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -62,4 +63,5 @@ async def health():
         "status": "ok",
         "model": settings.MODEL_NAME,
         "runtime": "onnxruntime",
+        "classifiers": classifier_status(),
     }

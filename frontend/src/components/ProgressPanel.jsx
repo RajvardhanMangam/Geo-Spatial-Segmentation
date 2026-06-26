@@ -9,6 +9,7 @@ import { getGeoJsonUrl } from '../services/api';
 const FEATURE_COLORS = {
   building:   '#FF4444',
   road:       '#4488FF',
+  road_added: '#FFD23F',
   water:      '#00BBFF',
 };
 
@@ -22,9 +23,23 @@ export default function ProgressPanel() {
   const countByType = useMemo(() => {
     const counts = {};
     detections.forEach((d) => {
-      counts[d.feature_type] = (counts[d.feature_type] || 0) + 1;
+      const label = d.display_label || d.feature_type;
+      counts[label] = (counts[label] || 0) + 1;
     });
     return counts;
+  }, [detections]);
+
+  const featureRows = useMemo(() => {
+    const colors = {};
+    detections.forEach((d) => {
+      const label = d.display_label || d.feature_type;
+      if (!colors[label]) {
+        colors[label] =
+          d.colour || FEATURE_COLORS[d.base_feature_type] || FEATURE_COLORS[d.feature_type] || '#888888';
+      }
+    });
+
+    return Object.entries(colors).sort(([a], [b]) => a.localeCompare(b));
   }, [detections]);
 
   if (!jobId) return null;
@@ -64,16 +79,16 @@ export default function ProgressPanel() {
 
       {/* Per-type breakdown + toggles */}
       <div className="feature-list">
-        {Object.entries(FEATURE_COLORS).map(([type, color]) => (
+        {featureRows.map(([type, color]) => (
           <div
             key={type}
-            className={`feature-row ${activeFilters[type] ? 'active' : 'inactive'}`}
+            className={`feature-row ${activeFilters[type] !== false ? 'active' : 'inactive'}`}
             onClick={() => toggleFilter(type)}
           >
             <span className="feature-dot" style={{ background: color }} />
             <span className="feature-name">{type}</span>
             <span className="feature-count">{countByType[type] || 0}</span>
-            <span className="feature-toggle">{activeFilters[type] ? '●' : '○'}</span>
+            <span className="feature-toggle">{activeFilters[type] !== false ? '●' : '○'}</span>
           </div>
         ))}
       </div>

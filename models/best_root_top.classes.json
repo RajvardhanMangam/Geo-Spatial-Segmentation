@@ -1,0 +1,21 @@
+{
+  "classes": [
+    "roof_type_1",
+    "roof_type_2",
+    "roof_type_3",
+    "roof_type_4"
+  ],
+  "model_name": "convnext_tiny",
+  "image_size": 224,
+  "input": "float32 NCHW RGB, normalized with ImageNet mean/std",
+  "mean": [
+    0.485,
+    0.456,
+    0.406
+  ],
+  "std": [
+    0.229,
+    0.224,
+    0.225
+  ]
+}

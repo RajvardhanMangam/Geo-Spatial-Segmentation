@@ -14,6 +14,9 @@ import proj4 from 'proj4';
 proj4.defs('EPSG:32644', '+proj=utm +zone=44 +datum=WGS84 +units=m +no_defs');
 proj4.defs('EPSG:32643', '+proj=utm +zone=43 +datum=WGS84 +units=m +no_defs');
 proj4.defs('EPSG:32645', '+proj=utm +zone=45 +datum=WGS84 +units=m +no_defs');
+proj4.defs('EPSG:32744', '+proj=utm +zone=44 +south +datum=WGS84 +units=m +no_defs');
+proj4.defs('EPSG:32743', '+proj=utm +zone=43 +south +datum=WGS84 +units=m +no_defs');
+proj4.defs('EPSG:32745', '+proj=utm +zone=45 +south +datum=WGS84 +units=m +no_defs');
 proj4.defs('EPSG:3857',  '+proj=merc +a=6378137 +b=6378137 +lat_ts=0 +lon_0=0 +x_0=0 +y_0=0 +k=1 +units=m +nadgrids=@null +wktext +no_defs');
 proj4.defs('EPSG:4326',  '+proj=longlat +datum=WGS84 +no_defs');
 
@@ -68,9 +71,29 @@ function normalizeCrs(crs) {
   if (!crs) return WGS84;
   const upper = crs.toUpperCase().replace(/\s+/g, '');
   // Already in EPSG:XXXX form
-  if (upper.startsWith('EPSG:')) return upper;
+  if (upper.startsWith('EPSG:')) {
+    ensureProjectionRegistered(upper);
+    return upper;
+  }
   // OGC URN form
   const urnMatch = upper.match(/URN:OGC:DEF:CRS:EPSG:.*:(\d+)/);
-  if (urnMatch) return `EPSG:${urnMatch[1]}`;
+  if (urnMatch) {
+    const epsg = `EPSG:${urnMatch[1]}`;
+    ensureProjectionRegistered(epsg);
+    return epsg;
+  }
   return WGS84;
+}
+
+function ensureProjectionRegistered(epsg) {
+  if (proj4.defs(epsg)) return;
+
+  const match = epsg.match(/^EPSG:(326|327)(\d{2})$/);
+  if (!match) return;
+
+  const zone = Number(match[2]);
+  if (zone < 1 || zone > 60) return;
+
+  const south = match[1] === '327' ? ' +south' : '';
+  proj4.defs(epsg, `+proj=utm +zone=${zone}${south} +datum=WGS84 +units=m +no_defs`);
 }
