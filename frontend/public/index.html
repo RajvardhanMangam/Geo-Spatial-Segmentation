@@ -3,8 +3,22 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>MoPR Rural Feature Detector</title>
-  <meta name="description" content="AI-powered detection of buildings, roads, and utilities from drone orthophotos" />
+  <title>MoPR Rural Intelligence Platform</title>
+  <meta name="description" content="Geospatial Intelligence — AI-powered rural feature detection" />
+
+  <!-- Google Fonts: Inter + IBM Plex Mono + Space Grotesk -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <!-- CesiumJS 1.115 via CDN -->
+  <script src="https://cesium.com/downloads/cesiumjs/releases/1.115/Build/Cesium/Cesium.js"></script>
+  <link href="https://cesium.com/downloads/cesiumjs/releases/1.115/Build/Cesium/Widgets/widgets.css" rel="stylesheet" />
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body, #root { height: 100%; overflow: hidden; background: #0B1220; }
+  </style>
 </head>
 <body>
   <div id="root"></div>

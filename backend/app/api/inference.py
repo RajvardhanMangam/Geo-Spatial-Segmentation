@@ -132,17 +132,23 @@ async def _run_inference(job_id: str):
             # Yield control back to event loop between chunks
             await asyncio.sleep(0)
 
-        # Done
+        # ── Shapely polygon merge (dissolves per-chunk duplicates) ───────────
         all_detections = await redis_client.get_all_detections(job_id)
         merged_detections = await loop.run_in_executor(
             _executor, merge_same_label_detections, all_detections
         )
-        await redis_client.replace_detections(job_id, merged_detections)
 
+        logger.info(
+            "Job %s completed: %d raw → %d merged detections (road enhancement available on demand)",
+            job_id, len(all_detections), len(merged_detections),
+        )
+
+        await redis_client.replace_detections(job_id, merged_detections)
         await redis_client.update_job(job_id, {
             "status": "completed",
             "progress": 100,
             "detections_found": len(merged_detections),
+            "enhancement_status": "idle",
             "updated_at": time.time(),
         })
         await redis_client.publish(f"job:{job_id}", {
@@ -151,12 +157,6 @@ async def _run_inference(job_id: str):
             "total_detections": len(merged_detections),
             "detections": merged_detections,
         })
-        logger.info(
-            "Job %s completed: %d raw detections, %d merged detections",
-            job_id,
-            len(all_detections),
-            len(merged_detections),
-        )
 
     except Exception as e:
         logger.exception("Job %s failed: %s", job_id, e)

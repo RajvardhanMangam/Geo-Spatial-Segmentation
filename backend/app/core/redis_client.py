@@ -71,5 +71,19 @@ class RedisClient:
         raw_list = await self.client.lrange(f"detections:{job_id}", 0, -1)
         return [json.loads(r) for r in raw_list]
 
+    # ── Enhanced road detections (user-triggered road enhancement) ────────
+    async def set_enhanced_roads(self, job_id: str, roads: list, ttl: int = 86400):
+        key = f"enhanced_roads:{job_id}"
+        async with self.client.pipeline(transaction=True) as pipe:
+            pipe.delete(key)
+            if roads:
+                pipe.rpush(key, *[json.dumps(r) for r in roads])
+            pipe.expire(key, ttl)
+            await pipe.execute()
+
+    async def get_enhanced_roads(self, job_id: str) -> list:
+        raw_list = await self.client.lrange(f"enhanced_roads:{job_id}", 0, -1)
+        return [json.loads(r) for r in raw_list]
+
 
 redis_client = RedisClient()

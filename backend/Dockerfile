@@ -1,9 +1,19 @@
 FROM python:3.11-slim
 
-# Runtime shared library used by OpenCV / numerical wheels.
+# Runtime libs for OpenCV, rasterio (GDAL), and numerical wheels.
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libgomp1 \
+    gdal-bin \
+    libgdal-dev \
+    libgeos-dev \
+    libproj-dev \
+    g++ \
+    gcc \
     && rm -rf /var/lib/apt/lists/*
+
+ENV GDAL_CONFIG=/usr/bin/gdal-config
+ENV CPLUS_INCLUDE_PATH=/usr/include/gdal
+ENV C_INCLUDE_PATH=/usr/include/gdal
 
 WORKDIR /app
 

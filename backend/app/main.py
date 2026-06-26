@@ -8,7 +8,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
-from app.api import inference, jobs, upload, websocket_handler
+from app.api import inference, jobs, road_enhance, upload, websocket_handler
+from app.api.road_enhance import ws_router as road_enhance_ws
 from app.core.config import settings
 from app.core.redis_client import redis_client
 
@@ -47,7 +48,9 @@ app.add_middleware(
 app.include_router(upload.router, prefix="/api/v1", tags=["upload"])
 app.include_router(inference.router, prefix="/api/v1", tags=["inference"])
 app.include_router(jobs.router, prefix="/api/v1", tags=["jobs"])
+app.include_router(road_enhance.router, prefix="/api/v1", tags=["road-enhancement"])
 app.include_router(websocket_handler.router)
+app.include_router(road_enhance_ws)
 
 app.mount(
     "/outputs",

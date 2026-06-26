@@ -74,3 +74,12 @@ export async function getJob(jobId) {
 export function getGeoJsonUrl(jobId) {
   return `${API}/api/v1/jobs/${jobId}/geojson`;
 }
+
+/**
+ * Trigger on-demand road enhancement for a completed job.
+ * Progress streams via /ws/{jobId}/enhance.
+ */
+export async function startRoadEnhancement(jobId) {
+  const { data } = await http.post(`/api/v1/jobs/${jobId}/enhance-roads`);
+  return data; // { status, job_id, steps }
+}

@@ -17,8 +17,15 @@ export const useStore = create((set, get) => ({
   totalDetections: 0,
   error: null,
 
-  // Detections — array of detection objects
+  // Detections — array of detection objects (original merged roads)
   detections: [],
+
+  // Road Enhancement Mode
+  roadMode: 'original',          // 'original' | 'enhanced'
+  enhancementStatus: 'idle',     // 'idle' | 'running' | 'completed' | 'failed'
+  enhancementSteps: [],          // list of step names that have completed
+  currentEnhancementStep: '',    // name of step currently executing
+  enhancedRoads: [],             // enhanced road detections from user-triggered pipeline
 
   // Active filters
   activeFilters: {
@@ -30,7 +37,10 @@ export const useStore = create((set, get) => ({
   // Confidence threshold
   confidenceThreshold: 0.10,
 
-  // ── Actions ──────────────────────────────────────────────────
+  // UI status message (derived from job phase for display)
+  statusMessage: '',
+
+  // ── Inference actions ─────────────────────────────────────────
   setUploadId: (id) => set({ uploadId: id }),
   setUploadProgress: (p) => set({ uploadProgress: p }),
   setUploadStatus: (s) => set({ uploadStatus: s }),
@@ -58,7 +68,34 @@ export const useStore = create((set, get) => ({
     })),
 
   setConfidenceThreshold: (v) => set({ confidenceThreshold: v }),
+  setStatusMessage: (msg) => set({ statusMessage: msg }),
 
+  // ── Road enhancement actions ──────────────────────────────────
+  setRoadMode: (mode) => set({ roadMode: mode }),
+
+  setEnhancementStatus: (s) => set({ enhancementStatus: s }),
+
+  addEnhancementStep: (step) =>
+    set((state) => ({
+      enhancementSteps: state.enhancementSteps.includes(step)
+        ? state.enhancementSteps
+        : [...state.enhancementSteps, step],
+    })),
+
+  setCurrentEnhancementStep: (step) => set({ currentEnhancementStep: step }),
+
+  setEnhancedRoads: (roads) => set({ enhancedRoads: roads }),
+
+  resetEnhancement: () =>
+    set({
+      roadMode: 'original',
+      enhancementStatus: 'idle',
+      enhancementSteps: [],
+      currentEnhancementStep: '',
+      enhancedRoads: [],
+    }),
+
+  // ── Full reset ────────────────────────────────────────────────
   reset: () =>
     set({
       uploadId: null,
@@ -71,5 +108,11 @@ export const useStore = create((set, get) => ({
       totalDetections: 0,
       error: null,
       detections: [],
+      statusMessage: '',
+      roadMode: 'original',
+      enhancementStatus: 'idle',
+      enhancementSteps: [],
+      currentEnhancementStep: '',
+      enhancedRoads: [],
     }),
 }));

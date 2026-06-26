@@ -38,6 +38,24 @@ class Settings(BaseSettings):
         "water": [3],
     }
 
+    # Road connectivity enhancement (per-chunk, during inference)
+    ROAD_CONNECTIVITY_ENABLE: bool = True
+    ROAD_MAX_CONNECTION_DISTANCE: int = 50     # pixels
+    ROAD_MAX_ANGLE_DIFFERENCE: float = 20.0   # degrees
+    ROAD_TEMPLATE_MATCH_THRESHOLD: float = 0.7
+    ROAD_MIN_COMPONENT_AREA: int = 50          # pixels²
+    ROAD_SKELETON_ENABLE: bool = True
+    ROAD_CHUNK_EDGE_CONNECTION_ENABLE: bool = True
+
+    # Road Enhancement Mode (user-triggered, post-processing)
+    ROAD_ENHANCEMENT_ENABLED: bool = True
+    ROAD_TEMPLATE_MATCHING: bool = True
+    ROAD_CONNECTED_COMPONENTS: bool = True
+    ROAD_SKELETON_ANALYSIS: bool = True
+    ROAD_ENDPOINT_LINKING: bool = True
+    ROAD_OUTLIER_REMOVAL: bool = True
+    ROAD_SMOOTHING: bool = True
+
     # Redis
     REDIS_URL: str = "redis://localhost:6379/0"
 
