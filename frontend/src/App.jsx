@@ -1,82 +1,45 @@
-/**
- * MoPR Rural Feature Detector — Main App
- */
 import React from 'react';
+import { AnimatePresence } from 'framer-motion';
 import { useStore } from './store/useStore';
 import { useJobStream } from './hooks/useJobStream';
-import DetectionMap from './components/DetectionMap';
-import UploadPanel from './components/UploadPanel';
-import ProgressPanel from './components/ProgressPanel';
+import Header from './components/Header';
+import Sidebar from './components/Sidebar';
+import CesiumGlobe from './components/CesiumGlobe';
+import DetectionLegend from './components/DetectionLegend';
+import EmptyState from './components/EmptyState';
+import StatusBar from './components/StatusBar';
 import './App.css';
 
 export default function App() {
-  const { jobId, jobStatus, detections, inferenceProgress } = useStore();
-
-  // Connect WebSocket when a job is active
+  const { jobId, detections, imageMetadata, uploadStatus } = useStore();
   useJobStream(jobId);
+
+  const isIdle = !imageMetadata && uploadStatus === 'idle';
 
   return (
     <div className="app">
-      {/* Top bar */}
-      <header className="topbar">
-        <div className="topbar-left">
-          <span className="logo-mark">◈</span>
-          <span className="logo-text">MoPR <em>Rural Detector</em></span>
-          <span className="logo-sub">Hackathon · Problem Statement 1</span>
-        </div>
-        <div className="topbar-right">
-          {jobId && (
-            <div className="live-indicator">
-              <span className={`pulse ${jobStatus === 'running' ? 'pulse-active' : ''}`} />
-              <span className="live-text">
-                {jobStatus === 'running'
-                  ? `Processing · ${inferenceProgress.toFixed(1)}%`
-                  : jobStatus === 'completed'
-                  ? `Done · ${detections.length} features`
-                  : jobStatus}
-              </span>
-            </div>
-          )}
-          <a
-            href="https://geo.intel.iittnif.com/activitiesinitiatives/mopr-hackathon"
-            target="_blank"
-            rel="noreferrer"
-            className="hackathon-link"
-          >
-            MoPR Hackathon ↗
-          </a>
-        </div>
-      </header>
+      <Header />
 
-      {/* Main layout */}
-      <div className="main-layout">
-        {/* Sidebar */}
-        <aside className="sidebar">
-          <UploadPanel />
-          <ProgressPanel />
-          <div className="sidebar-footer">
-            <span>SegFormer ONNX · RGB · 1024px chunks</span>
-          </div>
-        </aside>
+      <div className="app-body">
+        <Sidebar />
 
-        {/* Map canvas */}
-        <main className="map-canvas">
-          <DetectionMap />
+        <main className="map-area">
+          {/* CesiumJS 3D globe — always rendered */}
+          <CesiumGlobe />
 
-          {/* No-job overlay */}
-          {!jobId && (
-            <div className="map-overlay">
-              <div className="overlay-content">
-                <div className="overlay-icon">◈</div>
-                <div className="overlay-title">Upload a drone orthophoto</div>
-                <div className="overlay-sub">
-                  Supports GeoTIFF · EPSG:32644 / 3857 · up to 6 GB
-                </div>
-              </div>
-            </div>
-          )}
+          {/* Empty-state overlay (semi-transparent, globe visible behind) */}
+          <AnimatePresence>
+            {isIdle && <EmptyState key="empty" />}
+          </AnimatePresence>
+
+          {/* Floating detection legend */}
+          <AnimatePresence>
+            {detections.length > 0 && <DetectionLegend key="legend" />}
+          </AnimatePresence>
         </main>
       </div>
+
+      <StatusBar />
     </div>
   );
 }

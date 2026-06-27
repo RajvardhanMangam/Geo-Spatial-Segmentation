@@ -9,7 +9,7 @@ WORKDIR /app
 
 COPY backend/requirements.txt .
 RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt
+    pip install --no-cache-dir --prefer-binary -r requirements.txt
 
 COPY backend/ .
 COPY models/segformer_epoch_35.onnx models/segformer_epoch_35.onnx

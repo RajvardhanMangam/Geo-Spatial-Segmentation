@@ -1,12 +1,8 @@
 /**
- * DetectionMap — full-screen Leaflet map with:
- *  - Satellite/OSM base tiles
- *  - Real-time GeoJSON detection overlays streamed from WebSocket
- *  - Image bounds overlay (shows processed area)
- *  - Per-feature-type colour coding
- *  - Click-to-inspect popups
+ * DetectionMap — full-screen Leaflet map
+ * Logic unchanged; visual styling updated to match enterprise dashboard.
  */
-import React, { useEffect, useRef, useMemo } from 'react';
+import React, { useEffect, useRef, useMemo, useCallback } from 'react';
 import {
   MapContainer,
   TileLayer,
@@ -14,6 +10,7 @@ import {
   Popup,
   Rectangle,
   useMap,
+  useMapEvents,
 } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 
@@ -21,32 +18,81 @@ import { useStore } from '../store/useStore';
 import { polygonToLatLngs, metadataToBounds } from '../utils/projection';
 
 const FEATURE_COLORS = {
-  building:   '#FF4444',
-  road:       '#4488FF',
-  road_added: '#FFD23F',
-  water:      '#00BBFF',
+  building:   '#F97316',
+  road:       '#2563EB',
+  road_added: '#F59E0B',
+  water:      '#06B6D4',
 };
 
 function getSubtype(det) {
   if (det.subtype) return det.subtype;
-  if (det.feature_type && det.feature_type !== det.base_feature_type) {
-    return det.feature_type;
-  }
-  if (det.display_label?.includes(' - ')) {
-    return det.display_label.split(' - ').slice(1).join(' - ');
-  }
+  if (det.feature_type && det.feature_type !== det.base_feature_type) return det.feature_type;
+  if (det.display_label?.includes(' - ')) return det.display_label.split(' - ').slice(1).join(' - ');
   return det.feature_type;
 }
 
-// Fit map to image bounds when metadata arrives
 function BoundsFitter({ bounds }) {
   const map = useMap();
   useEffect(() => {
-    if (bounds) {
-      map.fitBounds(bounds, { padding: [20, 20] });
-    }
+    if (bounds) map.fitBounds(bounds, { padding: [40, 40] });
   }, [bounds, map]);
   return null;
+}
+
+function DetectionPolygon({ det, color, isAddedRoad }) {
+  const crs     = det.crs || 'EPSG:4326';
+  const latLngs = useMemo(() => polygonToLatLngs(det.geo_polygon, crs), [det.geo_polygon, crs]);
+  const subtype = getSubtype(det);
+  const label   = det.display_label || det.feature_type || '';
+
+  return (
+    <Polygon
+      positions={latLngs}
+      pathOptions={{
+        color,
+        weight: isAddedRoad ? 3 : 1.5,
+        opacity: 0.9,
+        fillColor: color,
+        fillOpacity: isAddedRoad ? 0.4 : 0.25,
+      }}
+      eventHandlers={{
+        mouseover: (e) => e.target.setStyle({ fillOpacity: isAddedRoad ? 0.6 : 0.5, weight: isAddedRoad ? 4 : 2.5 }),
+        mouseout:  (e) => e.target.setStyle({ fillOpacity: isAddedRoad ? 0.4 : 0.25, weight: isAddedRoad ? 3 : 1.5 }),
+      }}
+    >
+      <Popup>
+        <div className="detection-popup">
+          <div
+            className="popup-type-badge"
+            style={{
+              color,
+              background: color + '22',
+              border: `1px solid ${color}55`,
+            }}
+          >
+            <svg width="8" height="8" viewBox="0 0 8 8" fill={color}>
+              <circle cx="4" cy="4" r="4" />
+            </svg>
+            {label}
+          </div>
+          <div className="popup-grid">
+            <span className="popup-key">Class</span>
+            <span className="popup-val">{det.base_feature_type || det.feature_type}</span>
+            <span className="popup-key">Type</span>
+            <span className="popup-val">{subtype}</span>
+            <span className="popup-key">Confidence</span>
+            <span className="popup-val">{(det.confidence * 100).toFixed(1)}%</span>
+            <span className="popup-key">Area</span>
+            <span className="popup-val">{det.area_px?.toLocaleString()} px²</span>
+            <span className="popup-key">Chunk</span>
+            <span className="popup-val">{det.chunk_id}</span>
+            <span className="popup-key">CRS</span>
+            <span className="popup-val">{det.crs}</span>
+          </div>
+        </div>
+      </Popup>
+    </Polygon>
+  );
 }
 
 export default function DetectionMap() {
@@ -57,11 +103,12 @@ export default function DetectionMap() {
     [imageMetadata]
   );
 
-  // Convert detections to Leaflet polygons, filtered by type and visibility
   const visibleDetections = useMemo(() => {
     return detections
       .filter(
-        (d) => activeFilters[d.display_label || d.feature_type] !== false && d.geo_polygon?.length >= 4
+        (d) =>
+          activeFilters[d.display_label || d.feature_type] !== false &&
+          d.geo_polygon?.length >= 4
       )
       .sort((a, b) => {
         if (a.source_feature_type === 'road_added' && b.source_feature_type !== 'road_added') return 1;
@@ -72,7 +119,7 @@ export default function DetectionMap() {
 
   const center = bounds
     ? [(bounds[0][0] + bounds[1][0]) / 2, (bounds[0][1] + bounds[1][1]) / 2]
-    : [20.5937, 78.9629]; // India centre fallback
+    : [20.5937, 78.9629];
 
   return (
     <MapContainer
@@ -82,7 +129,7 @@ export default function DetectionMap() {
       style={{ width: '100%', height: '100%' }}
       zoomControl={true}
     >
-      {/* Satellite base layer */}
+      {/* Satellite base */}
       <TileLayer
         url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"
         attribution="Esri, Maxar, Earthstar Geographics"
@@ -90,72 +137,46 @@ export default function DetectionMap() {
         maxZoom={24}
       />
 
-      {/* OSM labels overlay */}
+      {/* Label overlay */}
       <TileLayer
         url="https://{s}.basemaps.cartocdn.com/light_only_labels/{z}/{x}/{y}{r}.png"
-        attribution="© OpenStreetMap, © CartoDB"
-        opacity={0.7}
+        attribution="© OpenStreetMap © CartoDB"
+        opacity={0.65}
         maxNativeZoom={20}
         maxZoom={24}
       />
 
-      {/* Image bounds rectangle */}
+      {/* Image bounds */}
       {bounds && (
         <Rectangle
           bounds={bounds}
           pathOptions={{
-            color: '#00FF88',
-            weight: 2,
+            color: '#22C55E',
+            weight: 1.5,
             fill: false,
-            dashArray: '6 4',
-            opacity: 0.8,
+            dashArray: '8 5',
+            opacity: 0.6,
           }}
         />
       )}
 
-      {/* Fit map when bounds are ready */}
       <BoundsFitter bounds={bounds} />
 
-      {/* Detection polygons */}
+      {/* Detections */}
       {visibleDetections.map((det, idx) => {
-        const crs = det.crs || 'EPSG:4326';
-        const latLngs = polygonToLatLngs(det.geo_polygon, crs);
-        const color = det.colour || FEATURE_COLORS[det.base_feature_type] || FEATURE_COLORS[det.feature_type] || '#FFFFFF';
+        const color = det.colour
+          || FEATURE_COLORS[det.base_feature_type]
+          || FEATURE_COLORS[det.feature_type]
+          || '#FFFFFF';
         const isAddedRoad = det.source_feature_type === 'road_added';
-        const subtype = getSubtype(det);
 
         return (
-          <Polygon
+          <DetectionPolygon
             key={`${det.chunk_id}-${idx}`}
-            positions={latLngs}
-            pathOptions={{
-              color,
-              weight: isAddedRoad ? 3 : 1.5,
-              opacity: isAddedRoad ? 1 : 0.9,
-              fillColor: color,
-              fillOpacity: isAddedRoad ? 0.45 : 0.25,
-            }}
-          >
-            <Popup>
-              <div style={{ fontFamily: 'monospace', fontSize: 13 }}>
-                <strong style={{ color, textTransform: 'uppercase' }}>
-                  {det.display_label || det.feature_type}
-                </strong>
-                <br />
-                Class: {det.base_feature_type || det.feature_type}
-                <br />
-                Type: {subtype}
-                <br />
-                Confidence: {(det.confidence * 100).toFixed(1)}%
-                <br />
-                Area: {det.area_px?.toLocaleString()} px²
-                <br />
-                Chunk: {det.chunk_id}
-                <br />
-                CRS: {det.crs}
-              </div>
-            </Popup>
-          </Polygon>
+            det={det}
+            color={color}
+            isAddedRoad={isAddedRoad}
+          />
         );
       })}
     </MapContainer>

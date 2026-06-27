@@ -3,8 +3,47 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>MoPR Rural Feature Detector</title>
-  <meta name="description" content="AI-powered detection of buildings, roads, and utilities from drone orthophotos" />
+  <title>GeoSight AI — Rural Intelligence Platform</title>
+  <meta name="description" content="AI-powered geospatial analysis of satellite imagery for rural feature detection — MoPR Hackathon" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+  <!-- CesiumJS 1.118 — loaded from CDN at runtime (no npm/Docker changes needed) -->
+  <link rel="stylesheet" href="https://cesium.com/downloads/cesiumjs/releases/1.118/Build/Cesium/Widgets/widgets.css" />
+  <script src="https://cesium.com/downloads/cesiumjs/releases/1.118/Build/Cesium/Cesium.js"></script>
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body, #root { width: 100%; height: 100%; overflow: hidden; background: #0B1220; }
+
+    /* ── Cesium container resets ───────────────────────────── */
+    .cesium-widget,
+    .cesium-viewer,
+    .cesium-viewer-cesiumWidgetContainer { width: 100% !important; height: 100% !important; }
+
+    /* Credit / attribution — keep but style tastefully */
+    .cesium-credit-container {
+      position: absolute !important;
+      bottom: 2px !important;
+      right: 6px !important;
+      left: auto !important;
+      background: rgba(11,18,32,0.7) !important;
+      border-radius: 4px !important;
+      padding: 2px 6px !important;
+    }
+    .cesium-credit-expand-link, .cesium-credit-text, .cesium-credit-lightbox-title {
+      color: rgba(255,255,255,0.35) !important;
+      font-size: 8px !important;
+    }
+    .cesium-credit-logoContainer { display: none !important; }
+
+    /* Hide Cesium toolbar overlays */
+    .cesium-viewer-toolbar,
+    .cesium-viewer-animationContainer,
+    .cesium-viewer-timelineContainer,
+    .cesium-viewer-fullscreenContainer { display: none !important; }
+  </style>
 </head>
 <body>
   <div id="root"></div>

@@ -7,13 +7,16 @@
     "ajv": "^8.18.0",
     "ajv-keywords": "^5.1.0",
     "axios": "^1.7.2",
+    "framer-motion": "^12.42.0",
     "leaflet": "^1.9.4",
+    "maplibre-gl": "^4.0.0",
     "proj4": "^2.11.0",
     "proj4leaflet": "^1.0.2",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-leaflet": "^4.2.1",
     "react-scripts": "5.0.1",
+    "three": "^0.167.0",
     "zustand": "^4.5.4"
   },
   "scripts": {
